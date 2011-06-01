@@ -1,0 +1,179 @@
+forceinline {[
+Pebble's Fucked Up Compiler, Kay?
+PFUCK is a small Brainfuck compiler.
+Copyright (c) 2007 Josiah Worcester.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+]}
+
+source ^stdcons.bfm
+source ^boolnot.bfm
+source ^copy.bfm
+source ^itoa.bfm
+source ^ift.bfm
+source ^if.bfm
+source ^whilet1.bfm
+
+@ opcode
+@ i
+@ temp0
+@ temp1
+@ temp2
+@ temp3
+@ temp4
+@ no_match
+@ call_itoa
+@ a1
+@ a2
+@ a3
+
+lastloc
+
+# EOF-agnostic version of "in" (assuming that
+# testing for EOF has +1 before, -1 after
+# conditionally) for EOF=0,-1, and no change.
+macro input {var} {} {} {
+	set var 0
+	if-1 {
+		subtract var 1
+	}
+	in var
+}
+
+# from ift, stops a branch if an itoa call is pending
+macro itoa_call_pending {} {} {} {
+	ift call_itoa {} {
+		set temp1 0
+		subtract temp4 1
+		is0 temp4
+	} : temp4 temp3
+}
+
+# If i equals 255, break out of the loop.
+macro break_out {} {} {} {
+	# no_match is used because it *is* 0, and using it allows us to conserve variables.
+	ift i {subcons255 no_match : temp4;boolnot no_match : temp4} {
+		set temp1 0
+		subtract no_match 1
+		is0 no_match
+	} : no_match temp4
+}
+
+stringout "#include <stdio.h>
+char b\[30000],*p=b;main()\{" : temp0 temp1
+input opcode
+if-1 {add opcode 1}
+while opcode {
+	if-1 {subtract opcode 1}
+	set no_match 1
+
+	ift opcode {subcons43 temp1 : temp0;boolnot temp1 : temp0} {
+		whilet1 opcode {subcons43 temp1 : temp0;boolnot temp1 : temp0} {
+			subtract temp1 1;is0 temp1
+
+			add i 1
+			input opcode
+		} : temp1 temp0
+		stringout "*p+=" : temp0 temp1
+		add call_itoa 1
+		set no_match 0
+	} : temp1 temp0
+
+	ift opcode {subcons45 temp1 : temp0;boolnot temp1 : temp0;itoa_call_pending} {
+		whilet1 opcode {subcons45 temp1 : temp0;boolnot temp1 : temp0} {
+			subtract temp1 1;is0 temp1
+
+			add i 1
+			input opcode
+		} : temp1 temp0
+		stringout "*p-=" : temp0 temp1
+		add call_itoa 1
+		set no_match 0
+	} : temp1 temp0
+
+	ift opcode {subcons60 temp1 : temp0;boolnot temp1 : temp0;itoa_call_pending} {
+		whilet1 opcode {break_out;subcons60 temp1 : temp0;boolnot temp1 : temp0} {
+			subtract temp1 1;is0 temp1
+
+			add i 1
+			input opcode
+		} : temp1 temp0
+		stringout "p-=" : temp0 temp1
+		add call_itoa 1
+		set no_match 0
+	} : temp1 temp0
+
+	ift opcode {subcons62 temp1 : temp0;boolnot temp1 : temp0;itoa_call_pending} {
+		whilet1 opcode {break_out;subcons62 temp1 : temp0;boolnot temp1 : temp0} {
+			subtract temp1 1;is0 temp1
+
+			add i 1
+			input opcode
+		} : temp1 temp0
+		stringout "p+=" : temp0 temp1
+		add call_itoa 1
+		set no_match 0
+	} : temp1 temp0
+
+	ift opcode {subcons91 temp1 : temp0;boolnot temp1 : temp0;itoa_call_pending} {
+		set no_match 0
+		input opcode
+		stringout "while(*p)\{" : temp0 temp1
+	} : temp1 temp0
+
+	ift opcode {subcons93 temp1 : temp0;boolnot temp1 : temp0;itoa_call_pending} {
+		set no_match 0
+		input opcode
+		stringout "\}" : temp0 temp1
+	} : temp1 temp0
+
+	ift opcode {subcons46 temp1 : temp0;boolnot temp1 : temp0;itoa_call_pending} {
+		set no_match 0
+		input opcode
+		stringout "putchar(*p);" : temp0 temp1
+	} : temp1 temp0
+
+	ift opcode {subcons44 temp1 : temp0;boolnot temp1 : temp0;itoa_call_pending} {
+		set no_match 0
+		input opcode
+		if-1 {stringout "*p=getchar();" : temp0 temp1}
+		if0 {stringout "*p=getchar()*!feof(stdin);" : temp0 temp1}
+	} : temp1 temp0
+
+	if call_itoa {
+		itoa i > a1 a2 a3 : temp4 temp3 temp2 temp1 temp0
+		if a3 {
+			out a3
+		}
+		if a2 {
+			out a2
+		}
+		out a1
+		set a1 0
+
+		stringout ";" : temp0 i
+
+		subtract call_itoa 1
+		is0 call_itoa
+	}
+
+	if no_match {
+		input opcode
+		subtract no_match 1
+		is0 no_match
+	}
+	if-1 {add opcode 1}
+}
+stringout "\}\n" : temp0 temp1

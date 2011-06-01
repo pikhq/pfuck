@@ -1,0 +1,18 @@
+To build, just type "make". This will create the following files:
+pfuck.0.c
+pfuck.0.b
+pfuck.0
+pfuck.-1.c
+pfuck.-1.b
+pfuck.-1
+
+The .0 versions assume that, on end of file, the current cell will be
+set to 0. The output code from them fulfills this assumption. The .-1
+versions assume that EOF=-1.
+
+Both versions work in environments where EOF doesn't change the
+current cell.
+
+To test the pfuck build, type "make test". This tests the produced
+binaries, not the Brainfuck code, by running LostKng.b through them,
+and comparing to a known good compilation.
