@@ -1,7 +1,7 @@
 forceinline {[
 Pebble's Fucked Up Compiler, Kay?
 PFUCK is a small Brainfuck compiler.
-Copyright (c) 2007 Josiah Worcester.
+Copyright (c) 2007 Ada Worcester.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
